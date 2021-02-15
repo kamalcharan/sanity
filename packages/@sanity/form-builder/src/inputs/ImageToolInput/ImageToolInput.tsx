@@ -1,7 +1,7 @@
 import React from 'react'
 import DefaultFormField from 'part:@sanity/components/formfields/default'
 import ImageLoader from 'part:@sanity/components/utilities/image-loader'
-import {ImageCrop, ImageHotspot, ObjectSchemaType} from '@sanity/types'
+import {ImageCrop, ImageHotspot, ObjectSchemaType, Path} from '@sanity/types'
 import ImageTool from '@sanity/imagetool'
 import HotspotImage from '@sanity/imagetool/HotspotImage'
 import {ChangeIndicatorProvider} from '@sanity/base/lib/change-indicators'
@@ -28,6 +28,10 @@ interface ImageToolInputProps {
 interface ImageToolInputState {
   value: any
 }
+
+const HOTSPOT_PATH: Path = ['hotspot']
+
+const EMPTY_PATH: Path = []
 
 const PREVIEW_ASPECT_RATIOS = [
   ['3:4', 3 / 4],
@@ -85,11 +89,13 @@ export default class ImageToolInput extends React.Component<
     const {imageUrl, compareValue, level, readOnly} = this.props
     const {value} = this.state
 
+    console.log('ImageToolInput: render')
+
     return (
       // @todo: render presence and markers
       <ChangeIndicatorProvider
-        path={['hotspot']}
-        focusPath={[]}
+        path={HOTSPOT_PATH}
+        focusPath={EMPTY_PATH}
         value={value?.current}
         compareValue={compareValue}
       >

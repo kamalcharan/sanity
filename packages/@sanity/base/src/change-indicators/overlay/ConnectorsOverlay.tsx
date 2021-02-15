@@ -33,6 +33,8 @@ function useResizeObserver(
   React.useEffect(() => resizeObserver.observe(element, onResize), [element, onResize])
 }
 export const ConnectorsOverlay = React.memo(function ConnectorsOverlay(props: Props) {
+  console.log('ConnectorsOverlay: render')
+
   const {rootRef, onSetFocus} = props
 
   const [hovered, setHovered] = React.useState<string | null>(null)

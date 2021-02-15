@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {useMemo} from 'react'
 import shallowEquals from 'shallow-equals'
 import {Marker, Path, SchemaType} from '@sanity/types'
 import {ChangeIndicatorProvider} from '@sanity/base/lib/change-indicators'
@@ -6,9 +6,8 @@ import * as PathUtils from '@sanity/util/paths'
 import generateHelpUrl from '@sanity/generate-help-url'
 import {FormFieldPresence, FormFieldPresenceContext} from '@sanity/base/presence'
 import PatchEvent from './PatchEvent'
-import {emptyArray, emptyObject} from './utils/empty'
+import {emptyArray} from './utils/empty'
 
-const EMPTY_PROPS = emptyObject<{}>()
 const EMPTY_MARKERS: Marker[] = emptyArray()
 const EMPTY_PATH: Path = emptyArray()
 const EMPTY_PRESENCE: FormFieldPresence[] = emptyArray()
@@ -27,7 +26,7 @@ interface Props {
   level: number
   isRoot?: boolean
   path: Path
-  filterField?: Function
+  filterField?: (...args: any[]) => any
   onKeyUp?: (ev: React.KeyboardEvent) => void
   onKeyPress?: (ev: React.KeyboardEvent) => void
 }
@@ -62,6 +61,7 @@ export class FormBuilderInput extends React.Component<Props> {
     markers: EMPTY_MARKERS,
   }
   _input: FormBuilderInput | HTMLDivElement | null
+
   getValuePath = () => {
     return PathUtils.pathFor(this.context.getValuePath().concat(this.props.path))
   }
@@ -89,6 +89,7 @@ export class FormBuilderInput extends React.Component<Props> {
     return propsDiffer || pathDiffer
   }
 
+  // eslint-disable-next-line camelcase
   UNSAFE_componentWillReceiveProps(nextProps: Props) {
     const willHaveFocus = PathUtils.hasFocus(nextProps.focusPath, nextProps.path)
     const hasFocus = PathUtils.hasFocus(this.props.focusPath, this.props.path)
@@ -113,12 +114,15 @@ export class FormBuilderInput extends React.Component<Props> {
 
   focus() {
     const {type} = this.props
+
     if (this._input && typeof this._input.focus === 'function') {
       this._input.focus()
       return
     }
+
     const inputComponent = this.resolveInputComponent(type)
     const inputDisplayName = getDisplayName(inputComponent)
+
     // no ref
     if (!this._input) {
       // eslint-disable-next-line no-console
@@ -148,6 +152,7 @@ export class FormBuilderInput extends React.Component<Props> {
     }
     onChange(patchEvent)
   }
+
   handleFocus = (nextPath) => {
     const {path, onFocus, focusPath} = this.props
     if (!onFocus) {
@@ -165,6 +170,7 @@ export class FormBuilderInput extends React.Component<Props> {
     }
     onFocus(nextFocusPath)
   }
+
   handleBlur = () => {
     const {onBlur} = this.props
     if (!onBlur) {
@@ -184,25 +190,10 @@ export class FormBuilderInput extends React.Component<Props> {
   }
 
   render() {
-    const {
-      onChange,
-      onFocus,
-      onBlur,
-      path,
-      readOnly,
-      value,
-      markers,
-      type,
-      level,
-      focusPath,
-      compareValue,
-      isRoot,
-      presence: explicitPresence,
-      ...rest
-    } = this.props
-
-    const presence = explicitPresence || (this.context as Context).presence
+    const {type} = this.props
     const InputComponent = this.resolveInputComponent(type)
+    const childFocusPath = this.getChildFocusPath()
+
     if (!InputComponent) {
       return (
         <div tabIndex={0} ref={this.setInput}>
@@ -211,59 +202,130 @@ export class FormBuilderInput extends React.Component<Props> {
       )
     }
 
-    let childMarkers = markers
-    if (!isRoot) {
-      childMarkers = markers
-        .filter((marker) => PathUtils.startsWith(path, marker.path))
-        .map((marker) => ({
-          ...marker,
-          path: PathUtils.pathFor(PathUtils.trimChildPath(path, marker.path)),
-        }))
-    }
-    const childFocusPath = this.getChildFocusPath()
-    const isLeaf = childFocusPath.length === 0 || childFocusPath[0] === PathUtils.FOCUS_TERMINATOR
-    const leafProps = isLeaf ? EMPTY_PROPS : {focusPath: childFocusPath}
-
-    const childPresenceInfo =
-      readOnly || !presence || presence.length === 0
-        ? EMPTY_PRESENCE
-        : presence
-            .filter((item) => PathUtils.startsWith(path, item.path))
-            .map((item) => ({
-              ...item,
-              path: PathUtils.trimChildPath(path, item.path),
-            }))
-
-    const childCompareValue = PathUtils.get(compareValue, path)
-
     return (
-      <div data-focus-path={PathUtils.toString(path)}>
-        <FormFieldPresenceContext.Provider value={childPresenceInfo}>
-          <ChangeIndicatorProvider
-            path={PathUtils.pathFor(path)}
-            focusPath={PathUtils.pathFor(focusPath)}
-            value={value}
-            compareValue={childCompareValue}
-          >
-            <InputComponent
-              {...rest}
-              {...leafProps}
-              isRoot={isRoot}
-              value={value}
-              compareValue={childCompareValue}
-              readOnly={readOnly || type.readOnly}
-              markers={childMarkers.length === 0 ? EMPTY_MARKERS : childMarkers}
-              type={type}
-              presence={childPresenceInfo}
-              onChange={this.handleChange}
-              onFocus={this.handleFocus}
-              onBlur={this.handleBlur}
-              level={level}
-              ref={this.setInput}
-            />
-          </ChangeIndicatorProvider>
-        </FormFieldPresenceContext.Provider>
-      </div>
+      <FormBuilderInputInner
+        {...this.props}
+        childFocusPath={childFocusPath}
+        context={this.context}
+        component={InputComponent}
+        onBlur={this.handleBlur}
+        onChange={this.handleChange}
+        onFocus={this.handleFocus}
+        setInput={this.setInput}
+      />
     )
   }
+}
+
+const DISABLE_CHANGE_INDICATOR = true
+
+function FormBuilderInputInner(props: any) {
+  const {
+    childFocusPath,
+    compareValue,
+    component: InputComponent,
+    context,
+    focusPath,
+    markers,
+    isRoot,
+    level,
+    onBlur,
+    onChange,
+    onFocus,
+    path,
+    presence: presenceProp,
+    readOnly,
+    setInput,
+    type,
+    value,
+    ...rest
+  } = props
+
+  const presence = presenceProp || (context as Context).presence
+
+  const childPresenceInfo = useMemo(() => {
+    if (readOnly || !presence || presence.length === 0) {
+      return EMPTY_PRESENCE
+    }
+
+    return presence
+      .filter((item: any) => PathUtils.startsWith(path, item.path))
+      .map((item: any) => ({...item, path: PathUtils.trimChildPath(path, item.path)}))
+  }, [path, presence, readOnly])
+
+  const childMarkers = useMemo(() => {
+    if (isRoot) return markers
+
+    return markers
+      .filter((marker: any) => PathUtils.startsWith(path, marker.path))
+      .map((marker: any) => ({
+        ...marker,
+        path: PathUtils.pathFor(PathUtils.trimChildPath(path, marker.path)),
+      }))
+  }, [isRoot, markers, path])
+
+  const isLeaf = childFocusPath.length === 0 || childFocusPath[0] === PathUtils.FOCUS_TERMINATOR
+  const childCompareValue = PathUtils.get(compareValue, path)
+
+  let input = useMemo(
+    () => (
+      <InputComponent
+        {...rest}
+        focusPath={isLeaf ? undefined : childFocusPath}
+        isRoot={isRoot}
+        value={value}
+        compareValue={childCompareValue}
+        readOnly={readOnly || type.readOnly}
+        markers={childMarkers.length === 0 ? EMPTY_MARKERS : childMarkers}
+        type={type}
+        presence={childPresenceInfo}
+        onChange={onChange}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        level={level}
+        ref={setInput}
+      />
+    ),
+    [
+      InputComponent,
+      childCompareValue,
+      childFocusPath,
+      childMarkers,
+      childPresenceInfo,
+      isLeaf,
+      isRoot,
+      level,
+      onBlur,
+      onChange,
+      onFocus,
+      readOnly,
+      rest,
+      setInput,
+      type,
+      value,
+    ]
+  )
+
+  if (!DISABLE_CHANGE_INDICATOR) {
+    input = (
+      <ChangeIndicatorProvider
+        path={PathUtils.pathFor(path)}
+        focusPath={PathUtils.pathFor(focusPath)}
+        value={value}
+        compareValue={childCompareValue}
+      >
+        {input}
+      </ChangeIndicatorProvider>
+    )
+  }
+
+  console.log('=== FormBuilderInputInner: render', path, '===')
+
+  return (
+    <div data-focus-path={PathUtils.toString(path)}>
+      <FormFieldPresenceContext.Provider value={childPresenceInfo}>
+        {input}
+      </FormFieldPresenceContext.Provider>
+    </div>
+  )
 }

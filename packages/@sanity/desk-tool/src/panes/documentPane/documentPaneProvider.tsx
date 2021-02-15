@@ -101,6 +101,8 @@ export const DocumentPaneProvider = withInitialValue(function DocumentPaneProvid
   const initialValue = getInitialValue({initialValue: props.initialValue, options: props.options})
   const value = editState.draft || editState.published || initialValue
 
+  console.log('===== DocumentPaneProvider =====')
+
   return (
     <DocumentHistoryProvider documentId={documentId} value={value}>
       <DocumentPane

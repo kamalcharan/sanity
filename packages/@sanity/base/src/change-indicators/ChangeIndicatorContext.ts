@@ -18,11 +18,11 @@ export interface ConnectorContextValue {
 
 export const ConnectorContext: React.Context<ConnectorContextValue> = React.createContext({
   isReviewChangesOpen: false as boolean,
-  onOpenReviewChanges: () => {},
-  onSetFocus: (nextPath: Path) => {},
+  onOpenReviewChanges: () => undefined,
+  onSetFocus: (nextPath: Path) => undefined,
 })
 
-const initial: ChangeIndicatorContext = {
+const initial: ChangeIndicatorContextValue = {
   path: EMPTY_ARRAY,
   fullPath: EMPTY_ARRAY,
   focusPath: EMPTY_ARRAY,

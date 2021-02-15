@@ -12,6 +12,8 @@ export const ChangeFieldWrapper = (props: {
   children: React.ReactNode
   hasHover: boolean
 }) => {
+  console.log('ChangeFieldWrapper: render')
+
   const ref = React.useRef<HTMLDivElement>(null)
 
   const {onSetFocus} = React.useContext(ConnectorContext)

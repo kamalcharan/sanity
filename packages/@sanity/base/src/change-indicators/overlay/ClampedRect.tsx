@@ -1,5 +1,5 @@
-import {Rect} from './types'
 import React from 'react'
+import {Rect} from './types'
 
 export function ClampedRect(
   props: {top: number; left: number; height: number; width: number; bounds: Rect} & Omit<
@@ -7,6 +7,8 @@ export function ClampedRect(
     'top' | 'left' | 'height' | 'width'
   >
 ) {
+  console.log('ClampedRect: render')
+
   const {bounds, ...rest} = props
   const x = Math.max(bounds.left, props.left)
   const y = Math.max(props.top, bounds.top)

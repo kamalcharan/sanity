@@ -1,5 +1,5 @@
 import {useLayer} from '@sanity/ui'
-import React from 'react'
+import React, {useMemo} from 'react'
 import deepCompare from 'react-fast-compare'
 import * as PathUtils from '@sanity/util/paths'
 import {Path} from '@sanity/types'
@@ -35,6 +35,10 @@ const ChangeBarWrapper = (
     children: React.ReactNode
   }
 ) => {
+  const {children, className, fullPath, hasFocus, isChanged} = props
+
+  console.log('ChangeBarWrapper: render', fullPath)
+
   const layer = useLayer()
   const [hasHover, setHover] = React.useState(false)
   const onMouseEnter = React.useCallback(() => setHover(true), [])
@@ -42,12 +46,12 @@ const ChangeBarWrapper = (
   const ref = React.useRef<HTMLDivElement | null>(null)
 
   useReporter(
-    `field-${PathUtils.toString(props.fullPath)}`,
+    `field-${PathUtils.toString(fullPath)}`,
     () => ({
       element: ref.current!,
-      path: PathUtils.pathFor(props.fullPath),
-      isChanged: props.isChanged,
-      hasFocus: props.hasFocus,
+      path: PathUtils.pathFor(fullPath),
+      isChanged: isChanged,
+      hasFocus: hasFocus,
       hasHover: hasHover,
       zIndex: layer.zIndex,
     }),
@@ -55,73 +59,80 @@ const ChangeBarWrapper = (
     deepCompare
   )
 
-  return (
-    <div
-      ref={ref}
-      className={props.className}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <ChangeBar hasFocus={props.hasFocus} isChanged={props.isChanged}>
-        {props.children}
-      </ChangeBar>
-    </div>
+  const node = useMemo(
+    () => (
+      <div ref={ref} className={className} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+        <ChangeBar fullPath={fullPath} hasFocus={hasFocus} isChanged={isChanged}>
+          {children}
+        </ChangeBar>
+      </div>
+    ),
+    [children, className, hasFocus, isChanged, onMouseEnter, onMouseLeave]
   )
+
+  return node
 }
 
 export function ChangeIndicatorScope(props: {path: Path; children?: React.ReactNode}) {
-  const parentContext = React.useContext(ChangeIndicatorContext)
+  console.log('ChangeIndicatorScope: render')
 
-  return (
-    <ChangeIndicatorProvider
-      path={PathUtils.pathFor(props.path)}
-      focusPath={parentContext.focusPath}
-      value={PathUtils.get(parentContext.value, PathUtils.pathFor(props.path))}
-      compareValue={PathUtils.get(parentContext.compareValue, PathUtils.pathFor(props.path))}
-    >
-      {props.children}
-    </ChangeIndicatorProvider>
-  )
+  const {children, path} = props
+  const parentContext = React.useContext(ChangeIndicatorContext)
+  const focusPath = parentContext.focusPath
+  const value = PathUtils.get(parentContext.value, PathUtils.pathFor(path))
+  const compareValue = PathUtils.get(parentContext.compareValue, PathUtils.pathFor(path))
+
+  const node = useMemo(() => {
+    return (
+      <ChangeIndicatorProvider
+        path={PathUtils.pathFor(path)}
+        focusPath={focusPath}
+        value={value}
+        compareValue={compareValue}
+      >
+        {children}
+      </ChangeIndicatorProvider>
+    )
+  }, [children, compareValue, focusPath, path, value])
+
+  return node
 }
 
-// const DEBUG = true
-
-export const ChangeIndicatorProvider = React.memo(function ChangeIndicatorProvider(props: {
+export function ChangeIndicatorProvider(props: {
   path: Path
   focusPath: Path
   value: any
   compareValue: any
   children: React.ReactNode
 }) {
-  // if (DEBUG) {
-  //   return props.children
-  // }
+  console.log('ChangeIndicatorProvider: render')
 
+  const {compareValue, value} = props
   const parentContext = React.useContext(ChangeIndicatorContext)
-
   const path = PathUtils.pathFor(props.path)
   const focusPath = PathUtils.pathFor(props.focusPath || [])
-  const fullPath = React.useMemo(() => PathUtils.pathFor(parentContext.fullPath.concat(path)), [
-    parentContext.fullPath,
+  const parentFullPath = parentContext.fullPath
+  const fullPath = React.useMemo(() => PathUtils.pathFor(parentFullPath.concat(path)), [
+    parentFullPath,
     path,
   ])
 
   const contextValue = React.useMemo(() => {
     return {
-      value: props.value,
-      compareValue: props.compareValue,
+      value,
+      compareValue,
       focusPath,
       path,
       fullPath,
     }
-  }, [fullPath, props.value, props.compareValue, focusPath, path])
+  }, [fullPath, value, compareValue, focusPath, path])
 
   return (
     <ChangeIndicatorContext.Provider value={contextValue}>
       {props.children}
     </ChangeIndicatorContext.Provider>
   )
-})
+}
 
 interface CoreProps {
   className?: string
@@ -144,6 +155,8 @@ export const CoreChangeIndicator = ({
   compareDeep,
   children,
 }: CoreProps) => {
+  console.log('CoreChangeIndicator: render')
+
   // todo: lazy compare debounced (possibly with intersection observer)
   const isChanged =
     (canCompareShallow(value, compareValue) && value !== compareValue) ||
@@ -174,6 +187,8 @@ export const ChangeIndicatorWithProvidedFullPath = ({
   compareDeep,
   children,
 }: any) => {
+  console.log('ChangeIndicatorWithProvidedFullPath: render')
+
   const parentContext = React.useContext(ChangeIndicatorContext)
 
   const canonicalPath = PathUtils.pathFor(path)
@@ -212,6 +227,8 @@ export const ChangeIndicatorCompareValueProvider = (props: {
 }) => {
   const parentContext = React.useContext(ChangeIndicatorContext)
 
+  console.log('ChangeIndicatorCompareValueProvider: render', parentContext.path)
+
   const contextValue = React.useMemo(() => {
     return {
       value: props.value,
@@ -236,6 +253,8 @@ export const ChangeIndicatorCompareValueProvider = (props: {
 }
 
 export const ContextProvidedChangeIndicator = (props: ChangeIndicatorContextProvidedProps) => {
+  console.log('ContextProvidedChangeIndicator: render')
+
   const {children, className, compareDeep, disabled} = props
   const context = React.useContext(ChangeIndicatorContext)
   const {value, compareValue, path, focusPath, fullPath} = context

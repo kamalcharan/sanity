@@ -23,6 +23,8 @@ export interface FormFieldHeaderProps {
   title?: React.ReactNode
 }
 
+const DISABLE_PRESENCE = true
+
 export const FormFieldHeader = memo(function FormFieldHeader(props: FormFieldHeaderProps) {
   const {
     __unstable_markers: markers,
@@ -43,7 +45,7 @@ export const FormFieldHeader = memo(function FormFieldHeader(props: FormFieldHea
         />
       </Box>
 
-      {presence && presence.length > 0 && (
+      {!DISABLE_PRESENCE && presence && presence.length > 0 && (
         <Box>
           <FieldPresence maxAvatars={4} presence={presence} />
         </Box>

@@ -457,6 +457,7 @@ export default class ImageInput extends React.PureComponent<Props, ImageInputSta
     return (
       <div className={styles.field} key={field.name}>
         <ImageInputField
+          field={field}
           value={fieldValue}
           type={field.type}
           field={field}

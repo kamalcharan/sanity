@@ -8,6 +8,8 @@ export function DebugLayers({
   field: {rect: Rect; bounds: Rect}
   change: {rect: Rect; bounds: Rect}
 }) {
+  console.log('DebugLayers: render')
+
   return (
     <g style={{pointerEvents: 'none'}}>
       <rect

@@ -1,4 +1,4 @@
-import React, {useMemo, useCallback} from 'react'
+import React, {useMemo, useCallback, forwardRef} from 'react'
 import {capitalize} from 'lodash'
 import {useId} from '@reach/auto-id'
 import {isTitledListValue, TitledListValue} from '@sanity/types'
@@ -74,6 +74,8 @@ const SelectInput = React.forwardRef(function SelectInput(
   }, [onFocus])
 
   const children = useMemo(() => {
+    console.log('SelectInput: render children')
+
     if (isRadio) {
       return (
         <RadioSelect
@@ -122,6 +124,8 @@ const SelectInput = React.forwardRef(function SelectInput(
     type.options.direction,
   ])
 
+  console.log('SelectInput: render')
+
   return (
     <FormField
       inputId={inputId}
@@ -138,7 +142,7 @@ const SelectInput = React.forwardRef(function SelectInput(
 
 export default SelectInput
 
-const RadioSelect = React.forwardRef(function RadioSelect(
+const RadioSelect = forwardRef(function RadioSelect(
   props: {
     items: TitledListValue<string | number>[]
     value: TitledListValue<string | number>
@@ -149,7 +153,7 @@ const RadioSelect = React.forwardRef(function RadioSelect(
     customValidity?: string
     inputId?: string
   },
-  forwardedRef: React.ForwardedRef<HTMLInputElement>
+  ref: React.ForwardedRef<HTMLInputElement>
 ) {
   const {items, value, onChange, onFocus, readOnly, customValidity, direction, inputId} = props
 
@@ -158,24 +162,57 @@ const RadioSelect = React.forwardRef(function RadioSelect(
     <Card border padding={3} radius={1}>
       <Layout space={3} role="group">
         {items.map((item, index) => (
-          <Flex key={index} as="label" align="center">
-            <Radio
-              ref={index === 0 ? forwardedRef : null}
-              checked={value === item}
-              onChange={() => onChange(item)}
-              onFocus={onFocus}
-              readOnly={readOnly}
-              customValidity={customValidity}
-              name={inputId}
-            />
-            <Box marginLeft={2}>
-              <Text size={1} weight="semibold">
-                {item.title}
-              </Text>
-            </Box>
-          </Flex>
+          <RadioSelectItem
+            customValidity={customValidity}
+            inputId={inputId}
+            item={item}
+            key={index}
+            onChange={onChange}
+            onFocus={onFocus}
+            readOnly={readOnly}
+            ref={index === 0 ? ref : null}
+            value={value}
+          />
         ))}
       </Layout>
     </Card>
+  )
+})
+
+const RadioSelectItem = forwardRef(function RadioSelectItem(
+  props: {
+    customValidity?: string
+    inputId?: string
+    item: TitledListValue<string | number>
+    onChange: (value: TitledListValue<string | number> | null) => void
+    onFocus: (event: React.FocusEvent<HTMLElement>) => void
+    readOnly: boolean
+    value: TitledListValue<string | number>
+  },
+  ref: React.ForwardedRef<HTMLInputElement>
+) {
+  const {customValidity, inputId, item, onChange, onFocus, readOnly, value} = props
+
+  const handleChange = useCallback(() => {
+    onChange(item)
+  }, [item, onChange])
+
+  return (
+    <Flex as="label" align="center">
+      <Radio
+        ref={ref}
+        checked={value === item}
+        onChange={handleChange}
+        onFocus={onFocus}
+        readOnly={readOnly}
+        customValidity={customValidity}
+        name={inputId}
+      />
+      <Box marginLeft={2}>
+        <Text size={1} weight="semibold">
+          {item.title}
+        </Text>
+      </Box>
+    </Flex>
   )
 })

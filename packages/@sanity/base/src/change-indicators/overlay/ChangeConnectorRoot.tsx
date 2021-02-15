@@ -20,6 +20,18 @@ function EnabledChangeConnectorRoot({
   isReviewChangesOpen,
   onOpenReviewChanges,
 }: Props) {
+  console.log('EnabledChangeConnectorRoot: render')
+
+  // React.useEffect(() => console.log('EnabledChangeConnectorRoot: children changed'), [children])
+  // React.useEffect(() => console.log('EnabledChangeConnectorRoot: className changed'), [className])
+  // React.useEffect(() => console.log('EnabledChangeConnectorRoot: onSetFocus changed'), [onSetFocus])
+  // React.useEffect(() => console.log('EnabledChangeConnectorRoot: isReviewChangesOpen changed'), [
+  //   isReviewChangesOpen,
+  // ])
+  // React.useEffect(() => console.log('EnabledChangeConnectorRoot: onOpenReviewChanges changed'), [
+  //   onOpenReviewChanges,
+  // ])
+
   const [rootRef, setRootRef] = React.useState<HTMLDivElement | null>()
   return (
     <ConnectorContext.Provider value={{isReviewChangesOpen, onOpenReviewChanges, onSetFocus}}>
@@ -34,6 +46,8 @@ function EnabledChangeConnectorRoot({
 }
 
 function DisabledChangeConnectorRoot({children, className}: Props) {
+  console.log('DisabledChangeConnectorRoot: render')
+
   return <ScrollContainer className={className}>{children}</ScrollContainer>
 }
 

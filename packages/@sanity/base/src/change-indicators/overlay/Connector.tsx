@@ -1,7 +1,6 @@
 import React from 'react'
 
-import {arrowPath, generateConnectorPath} from './connectorPath'
-import {mapConnectorToLine} from './mapConnectorToLine'
+import classNames from 'classnames'
 import {
   ARROW_MARGIN_X,
   ARROW_MARGIN_Y,
@@ -10,9 +9,10 @@ import {
   INTERACTIVE_STROKE_WIDTH,
   STROKE_WIDTH,
 } from '../constants'
+import {arrowPath, generateConnectorPath} from './connectorPath'
+import {mapConnectorToLine} from './mapConnectorToLine'
 import {Rect} from './types'
 import styles from './Connector.css'
-import classNames from 'classnames'
 import {ClampedRect} from './ClampedRect'
 
 interface Props {
@@ -24,6 +24,8 @@ interface Props {
 }
 
 export function Connector({from, to, hovered, focused, revertHovered}: Props) {
+  console.log('Connector: render')
+
   const line = mapConnectorToLine({from, to})
 
   // If both ends of the connector are out of bounds, then do not render
